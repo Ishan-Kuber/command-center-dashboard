@@ -78,3 +78,42 @@ export interface HotspotCluster {
   deviceIds: string[];
   radius: number;
 }
+
+// Connection management
+export type ConnectionStatus =
+  | 'connecting'
+  | 'connected'
+  | 'reconnecting'
+  | 'disconnected';
+
+export interface ConnectionState {
+  status: ConnectionStatus;
+  lastError: string | null;
+  reconnectAttempt: number;
+  connectedAt: number | null;
+}
+
+export type ConnectionStatusListener = (state: ConnectionState) => void;
+export type TelemetryListener = (message: TelemetryMessage) => void;
+
+export interface TelemetryConsumer {
+  connect(): void;
+  disconnect(): void;
+  onMessage(listener: TelemetryListener): () => void;
+  onStatusChange(listener: ConnectionStatusListener): () => void;
+  getState(): ConnectionState;
+}
+
+export interface MqttConsumerConfig {
+  brokerUrl: string;
+  topics: string[];
+  clientId?: string;
+  reconnectMaxInterval: number;
+  connectTimeoutMs?: number;
+}
+
+export interface WebSocketConsumerConfig {
+  url: string;
+  reconnectMaxInterval: number;
+  connectTimeoutMs?: number;
+}
