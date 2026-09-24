@@ -5,15 +5,22 @@ import { useDashboardStore } from "@/lib/store/dashboardStore";
 import DetectionChart from "./components/DetectionChart";
 import MockTelemetryLoader from "./components/MockTelemetryLoader";
 import dynamic from "next/dynamic";
+import { useTelemetryInit } from "@/hooks/useTelemetryInit";
 
-const HotspotMap = dynamic(
-  () => import("./components/HotspotMap"),
-  {
-    ssr: false,
-  }
-);
+const HotspotMap = dynamic(() => import("./components/HotspotMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[500px] w-full bg-slate-900 animate-pulse rounded-lg flex items-center justify-center text-slate-400">
+      Loading Hotspot Map...
+    </div>
+  ),
+});
 
 export default function Home() {
+
+  useTelemetryInit({ useMock: true, mockIntervalMs: 1000 });
+  
+
     const devices = useDashboardStore((state) => state.devices);
 
     const mqttConnected = useDashboardStore(
