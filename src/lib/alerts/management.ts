@@ -102,8 +102,8 @@ export function getLatestAlertPerRule(alerts: any[]): any[] {
     {} as Record<string, any[]>,
   );
 
-  return Object.values(grouped).map((ruleAlerts) => {
-    return ruleAlerts.reduce((latest, current) =>
+  return (Object.values(grouped) as any[][]).map((ruleAlerts) => {
+    return ruleAlerts.reduce((latest: any, current: any) =>
       current.timestamp > latest.timestamp ? current : latest,
     );
   });
