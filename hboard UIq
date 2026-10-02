@@ -1,0 +1,13 @@
+ package-lock.json                          |  18 [32m+[m
+ package.json                               |   1 [32m+[m
+ src/app/alerts/page.tsx                    | 155 [32m+++++++++[m
+ src/app/components/DetectionChart.tsx      |  67 [32m++++[m
+ src/app/components/HotspotMap.tsx          |  85 [32m+++++[m
+ src/app/components/MockTelemetryLoader.tsx |  17 [32m+[m
+ src/app/devices/page.tsx                   | 206 [32m+++++++++++[m
+ src/app/layout.tsx                         |  52 [32m++[m[31m-[m
+ src/app/page.tsx                           | 528 [32m+++++++++++++++++++++++++[m[31m----[m
+ src/app/settings/page.tsx                  |  49 [32m+++[m
+ src/lib/mock/telemetry.ts                  | 135 [32m++++++++[m
+ src/lib/store/dashboardStore.ts            | 222 [32m++++++++++++[m
+ 12 files changed, 1470 insertions(+), 65 deletions(-)
