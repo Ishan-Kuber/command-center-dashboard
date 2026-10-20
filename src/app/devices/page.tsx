@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useDashboardStore } from "@/lib/store/dashboardStore";
 import MockTelemetryLoader from "../components/MockTelemetryLoader";
+import { hasAnyConnectionConfig } from "../connection-config";
 import { Activity, Camera, Clock3, Crosshair, MapPin, Radio, Video } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -13,7 +14,7 @@ export default function Devices() {
 
   return (
     <main className="space-y-6">
-      <MockTelemetryLoader />
+      {!hasAnyConnectionConfig && <MockTelemetryLoader />}
       <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300/80">Operations / Fleet</p>

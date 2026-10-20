@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useDashboardStore } from "@/lib/store/dashboardStore";
 import MockTelemetryLoader from "../components/MockTelemetryLoader";
+import { hasAnyConnectionConfig } from "../connection-config";
 import { AlertTriangle, Bell, CircleCheck, Plus } from "lucide-react";
 
 const filters = ["All", "Active", "Resolved"] as const;
@@ -22,7 +23,7 @@ export default function Alerts() {
 
   return (
     <>
-      <MockTelemetryLoader />
+      {!hasAnyConnectionConfig && <MockTelemetryLoader />}
       <main className="space-y-6">
         <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>

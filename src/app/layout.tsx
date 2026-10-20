@@ -10,6 +10,7 @@ import {
   Settings2,
   Video,
 } from "lucide-react";
+import ConnectionMonitor from "./components/ConnectionMonitor";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -44,7 +45,7 @@ export default function RootLayout({
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-screen bg-slate-950 text-slate-100">
         <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_rgba(14,116,144,0.10),_transparent_42%)]">
-          <header className="sticky top-0 z-40 border-b border-slate-800/90 bg-slate-950/90 backdrop-blur-xl">
+          <header className="sticky top-0 z-[1200] border-b border-slate-800/90 bg-slate-950/90 backdrop-blur-xl">
             <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
               <div className="flex min-h-16 items-center justify-between gap-4 py-3">
                 <Link href="/" className="group flex min-w-0 items-center gap-3" aria-label="Command Center overview">
@@ -94,6 +95,7 @@ export default function RootLayout({
             {children}
           </div>
         </div>
+        <ConnectionMonitor />
       </body>
     </html>
   );

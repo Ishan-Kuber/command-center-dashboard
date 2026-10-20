@@ -17,6 +17,7 @@ import MockTelemetryLoader from "./components/MockTelemetryLoader";
 import dynamic from "next/dynamic";
 import { useTelemetryInit } from "@/hooks/useTelemetryInit";
 import { TIME_WINDOWS } from "@/lib/aggregation/time-window";
+import { hasAnyConnectionConfig, hasMqttConfig, hasWebSocketConfig } from "./connection-config";
 
 const HotspotMap = dynamic(() => import("./components/HotspotMap"), {
   ssr: false,
@@ -51,13 +52,14 @@ function formatTimestamp(timestamp: number) {
 }
 
 export default function Home() {
-  useTelemetryInit({ useMock: true, mockIntervalMs: 1000 });
+  useTelemetryInit({ useMock: !hasAnyConnectionConfig, mockIntervalMs: 1000 });
 
   const devices = useDashboardStore((state) => state.devices);
   const mqttConnected = useDashboardStore((state) => state.mqttConnected);
   const wsConnected = useDashboardStore((state) => state.wsConnected);
   const alerts = useDashboardStore((state) => state.alerts);
   const selectedTimeWindow = useDashboardStore((state) => state.selectedTimeWindow);
+  const selectTimeWindow = useDashboardStore((state) => state.selectTimeWindow);
 
   const deviceList = Object.values(devices);
   const totalDevices = deviceList.length;
@@ -111,7 +113,7 @@ export default function Home() {
 
   return (
     <>
-      <MockTelemetryLoader />
+      {!hasAnyConnectionConfig && <MockTelemetryLoader />}
 
       <main className="space-y-6">
         <section className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
@@ -123,29 +125,31 @@ export default function Home() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <ConnectionCard label="MQTT" connected={mqttConnected} icon={Radio} />
-            <ConnectionCard label="WebSocket" connected={wsConnected} icon={Wifi} />
+            <ConnectionCard label="MQTT" connected={mqttConnected} configured={hasMqttConfig} icon={Radio} />
+            <ConnectionCard label="WebSocket" connected={wsConnected} configured={hasWebSocketConfig} icon={Wifi} />
           </div>
         </section>
 
         <section className="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-900/65 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <div>
             <p className="text-sm font-medium text-slate-200">Time window</p>
-            <p className="mt-1 text-xs text-slate-500">Selector space reserved; current aggregation remains unchanged.</p>
+            <p className="mt-1 text-xs text-slate-500">Choose the interval used by the existing telemetry aggregation.</p>
           </div>
-          <div className="inline-flex w-fit items-center gap-1 rounded-xl border border-slate-800 bg-slate-950/70 p-1" role="group" aria-label="Time window options (display only)">
+          <div className="inline-flex w-fit items-center gap-1 rounded-xl border border-slate-800 bg-slate-950/70 p-1" role="group" aria-label="Time window options">
             {timeWindowOptions.map((option) => (
-              <span
+              <button
+                type="button"
                 key={option.value}
-                aria-current={selectedTimeWindow === option.value ? "true" : undefined}
-                className={`min-w-10 rounded-lg px-2.5 py-1.5 text-center text-xs font-medium ${
+                onClick={() => selectTimeWindow(option.value)}
+                aria-pressed={selectedTimeWindow === option.value}
+                className={`min-w-10 rounded-lg px-2.5 py-1.5 text-center text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/70 ${
                   selectedTimeWindow === option.value
                     ? "border border-cyan-300/15 bg-cyan-300/10 text-cyan-200"
-                    : "text-slate-500"
+                    : "text-slate-500 hover:bg-slate-800 hover:text-slate-200"
                 }`}
               >
                 {option.label}
-              </span>
+              </button>
             ))}
           </div>
         </section>
@@ -286,7 +290,7 @@ export default function Home() {
             </aside>
           </div>
 
-          <div className="mt-5 overflow-hidden rounded-xl border border-slate-800 bg-slate-950/50">
+          <div className="relative z-0 isolate mt-5 overflow-hidden rounded-xl border border-slate-800 bg-slate-950/50">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 px-4 py-3">
               <div>
                 <h3 className="text-sm font-semibold text-slate-200">Device map</h3>
@@ -294,7 +298,7 @@ export default function Home() {
               </div>
               <span className="text-xs text-slate-500">{totalDevices} devices · provisional</span>
             </div>
-            <div className="h-[500px] w-full">
+            <div className="relative z-0 isolate p-3">
               <HotspotMap />
             </div>
           </div>
@@ -339,21 +343,24 @@ export default function Home() {
 function ConnectionCard({
   label,
   connected,
+  configured,
   icon: Icon,
 }: {
   label: string;
   connected: boolean;
+  configured: boolean;
   icon: typeof Radio;
 }) {
+  const statusLabel = connected ? "Connected" : configured ? "Not connected" : "Not configured";
   return (
     <div className="flex min-w-[150px] items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/75 px-4 py-3">
-      <span className={`grid size-9 place-items-center rounded-lg ${connected ? "bg-emerald-400/10 text-emerald-300" : "bg-slate-800 text-slate-400"}`}>
+      <span className={`grid size-9 place-items-center rounded-lg ${connected ? "bg-emerald-400/10 text-emerald-300" : configured ? "bg-amber-400/10 text-amber-200" : "bg-slate-800 text-slate-500"}`}>
         <Icon className="size-4" aria-hidden="true" />
       </span>
       <div>
         <p className="text-xs text-slate-500">{label}</p>
-        <p className={`mt-0.5 text-sm font-medium ${connected ? "text-emerald-200" : "text-slate-300"}`}>
-          {connected ? "Connected" : "Disconnected"}
+        <p className={`mt-0.5 text-sm font-medium ${connected ? "text-emerald-200" : configured ? "text-amber-100" : "text-slate-400"}`}>
+          {statusLabel}
         </p>
       </div>
     </div>
