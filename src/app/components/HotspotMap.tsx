@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Circle as LeafletCircle,
   MapContainer,
@@ -9,28 +9,18 @@ import {
   TileLayer,
   Tooltip as LeafletTooltip,
 } from "react-leaflet";
-import { Activity, Clock3, Flame, Map as MapIcon, MapPin, Radio, X } from "lucide-react";
+import { Flame, Map as MapIcon, MapPin, X } from "lucide-react";
 import { useDashboardStore } from "@/lib/store/dashboardStore";
 import type { DeviceState } from "@/lib/types";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-// Fix Leaflet marker icon URLs.
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
-
 type MapMode = "street" | "intensity";
 
 function formatTimestamp(timestamp: number): string {
-  if (!Number.isFinite(timestamp)) return "—";
+  if (!Number.isFinite(timestamp)) return "Unavailable";
   const date = new Date(timestamp);
-  if (Number.isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) return "Unavailable";
   return date.toLocaleString([], {
     month: "short",
     day: "numeric",
@@ -44,106 +34,177 @@ function formatLocation(device: DeviceState): string {
   return `${device.location.lat.toFixed(5)}, ${device.location.lng.toFixed(5)}`;
 }
 
-function toIsoTimestamp(timestamp: number): string | undefined {
-  const date = new Date(timestamp);
-  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+function deviceStateClass(device: DeviceState): string {
+  if (device.status === "offline") return "cc-neutral";
+  if (device.fps < 20) return "cc-warning";
+  return "cc-positive";
 }
 
-function DeviceDetailCard({
+function deviceStateLabel(device: DeviceState): string {
+  if (device.status === "offline") return "Offline · provisional";
+  if (device.fps < 20) return "Reported online · low FPS";
+  return "Online · latest report";
+}
+
+function createDeviceIcon(device: DeviceState, selected: boolean): L.DivIcon {
+  const markerState = device.status === "offline"
+    ? "offline"
+    : device.fps < 20
+      ? "warning"
+      : "online";
+  const selectedClass = selected ? " cc-map-marker--selected" : "";
+  return L.divIcon({
+    className: "cc-map-marker-wrap",
+    html: `<span class="cc-map-marker cc-map-marker--${markerState}${selectedClass}" aria-hidden="true"></span>`,
+    iconSize: [29, 30],
+    iconAnchor: [14, 29],
+    tooltipAnchor: [0, -26],
+  });
+}
+
+function DevicePreview({
   device,
-  onClear,
+  onMoreDetails,
 }: {
-  device: DeviceState | undefined;
-  onClear: () => void;
+  device: DeviceState;
+  onMoreDetails: (deviceId: string) => void;
 }) {
-  const lastSeenIso = device ? toIsoTimestamp(device.lastSeen) : undefined;
-
   return (
-    <aside
-      className="min-h-[220px] rounded-xl border border-slate-800 bg-slate-950/70 p-5 xl:min-h-[500px]"
-      aria-label="Selected device details"
-      aria-live="polite"
-    >
-      {device ? (
-        <>
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-300/80">Selected camera / sensor</p>
-              <h3 className="mt-2 break-all text-lg font-semibold text-white">{device.deviceId}</h3>
-            </div>
-            <button
-              type="button"
-              onClick={onClear}
-              aria-label="Close device details"
-              className="grid size-9 shrink-0 place-items-center rounded-lg border border-slate-700 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/70"
-            >
-              <X className="size-4" aria-hidden="true" />
-            </button>
-          </div>
-
-          <div className="mt-5 flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-900/75 px-3 py-3">
-            <span className="text-xs text-slate-400">Latest reported status</span>
-            <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${device.status === "online" ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200" : "border-slate-700 bg-slate-800 text-slate-300"}`}>
-              {device.status}
-            </span>
-          </div>
-
-          <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900/50 p-3">
-            <p className="flex items-center gap-2 text-xs font-medium text-slate-400">
-              <MapPin className="size-3.5 text-cyan-300" aria-hidden="true" />
-              Camera / sensor location
-            </p>
-            <p className="mt-2 font-mono text-sm tabular-nums text-slate-100">{formatLocation(device)}</p>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <DetailMetric label="Detections · latest report" value={device.detectionCount} icon={Activity} />
-            <DetailMetric label="FPS" value={device.fps.toFixed(1)} icon={Radio} />
-            <DetailMetric label="Latency" value={`${device.latencyMs} ms`} icon={Clock3} />
-            <DetailMetric
-              label="Avg. confidence"
-              value={device.avgConfidence > 0 ? `${(device.avgConfidence * 100).toFixed(1)}%` : "—"}
-              icon={Activity}
-            />
-          </div>
-
-          <p className="mt-5 border-t border-slate-800 pt-4 text-xs text-slate-500">
-            Last seen{" "}
-            {lastSeenIso ? <time dateTime={lastSeenIso}>{formatTimestamp(device.lastSeen)}</time> : "—"}
-          </p>
-        </>
-      ) : (
-        <div className="flex min-h-[180px] flex-col items-center justify-center text-center xl:min-h-[450px]">
-          <span className="grid size-12 place-items-center rounded-2xl border border-slate-800 bg-slate-900 text-slate-500">
-            <MapPin className="size-5" aria-hidden="true" />
-          </span>
-          <h3 className="mt-4 text-sm font-semibold text-slate-200">Device details</h3>
-          <p className="mt-2 max-w-xs text-xs leading-5 text-slate-500">
-            Select a camera or sensor on the map to inspect its latest reported status and telemetry.
-          </p>
+    <div className="min-w-48 space-y-2 p-3 text-xs text-foreground">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-foreground">{device.deviceId}</p>
+          <p className="mt-1 text-muted-foreground">Camera / sensor</p>
         </div>
-      )}
-    </aside>
+        <span className={`shrink-0 text-[11px] font-medium ${deviceStateClass(device)}`}>
+          {device.status === "offline" ? "Offline" : device.fps < 20 ? "Low FPS" : "Online"}
+        </span>
+      </div>
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-1 border-t border-border pt-2 text-[11px]">
+        <dt className="text-muted-foreground">FPS</dt>
+        <dd className="text-right font-medium tabular-nums text-foreground">{device.fps.toFixed(1)}</dd>
+        <dt className="text-muted-foreground">Last seen</dt>
+        <dd className="text-right tabular-nums text-foreground">{formatTimestamp(device.lastSeen)}</dd>
+      </dl>
+      <button
+        type="button"
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onMoreDetails(device.deviceId);
+        }}
+        className="inline-flex min-h-8 w-full items-center justify-center gap-1.5 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        More details
+      </button>
+    </div>
   );
 }
 
-function DetailMetric({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value: string | number;
-  icon: typeof Activity;
-}) {
+function DetailValue({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-900/50 p-3">
-      <p className="flex min-h-8 items-start gap-1.5 text-[11px] leading-4 text-slate-500">
-        <Icon className="mt-0.5 size-3.5 shrink-0 text-slate-400" aria-hidden="true" />
-        {label}
-      </p>
-      <p className="mt-2 truncate text-lg font-semibold tabular-nums text-slate-100">{value}</p>
+    <div className="min-w-0 border-b border-border py-3 last:border-0">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="mt-1 break-words text-sm font-medium tabular-nums text-foreground">{value}</dd>
     </div>
+  );
+}
+
+function DeviceDetailsDrawer({
+  device,
+  drawerRef,
+  onClose,
+}: {
+  device: DeviceState;
+  drawerRef: React.RefObject<HTMLElement | null>;
+  onClose: () => void;
+}) {
+  const detections = device.detections ?? [];
+  const lastSeenDate = Number.isFinite(device.lastSeen) ? new Date(device.lastSeen) : null;
+  const lastSeenIso = lastSeenDate && !Number.isNaN(lastSeenDate.getTime())
+    ? lastSeenDate.toISOString()
+    : undefined;
+
+  return (
+    <aside
+      ref={drawerRef}
+      role="dialog"
+      aria-label={`Details for device ${device.deviceId}`}
+      className="cc-device-drawer flex max-h-dvh flex-col overflow-hidden border-border bg-card shadow-2xl"
+    >
+      <header className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Selected camera / sensor</p>
+          <h3 className="mt-1 break-all text-lg font-semibold tracking-tight text-foreground">{device.deviceId}</h3>
+        </div>
+        <button
+          type="button"
+          data-close-details
+          onClick={onClose}
+          aria-label="Close device details"
+          className="grid size-9 shrink-0 place-items-center rounded-md border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <X className="size-4" aria-hidden="true" />
+        </button>
+      </header>
+
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+        <div className="flex items-center justify-between gap-3 border-b border-border pb-3">
+          <span className="text-xs text-muted-foreground">Latest reported state</span>
+          <span className={`text-xs font-semibold ${deviceStateClass(device)}`}>{deviceStateLabel(device)}</span>
+        </div>
+
+        <section className="pt-4" aria-labelledby="device-location-heading">
+          <h4 id="device-location-heading" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <MapPin className="size-3.5 text-primary" aria-hidden="true" /> Location
+          </h4>
+          <p className="mt-2 font-mono text-sm tabular-nums text-foreground">{formatLocation(device)}</p>
+        </section>
+
+        <section className="mt-5" aria-labelledby="device-health-heading">
+          <h4 id="device-health-heading" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Reported health</h4>
+          <dl className="mt-1 grid grid-cols-2 gap-x-5">
+            <DetailValue label="Frames per second" value={device.fps.toFixed(1)} />
+            <DetailValue label="Latency" value={`${device.latencyMs} ms`} />
+            <DetailValue label="Detections · latest report" value={device.detectionCount} />
+            <DetailValue label="Average confidence" value={device.avgConfidence > 0 ? `${(device.avgConfidence * 100).toFixed(1)}%` : "Unavailable"} />
+            <DetailValue
+              label="Last seen"
+              value={lastSeenIso ? formatTimestamp(device.lastSeen) : "Unavailable"}
+            />
+          </dl>
+          {lastSeenIso && <time className="sr-only" dateTime={lastSeenIso}>{lastSeenIso}</time>}
+        </section>
+
+        <section className="mt-5" aria-labelledby="device-detections-heading">
+          <div className="flex items-center justify-between gap-3">
+            <h4 id="device-detections-heading" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Latest detection details</h4>
+            <span className="text-xs tabular-nums text-muted-foreground">{detections.length}</span>
+          </div>
+          {detections.length > 0 ? (
+            <ul className="mt-2 divide-y divide-border border-y border-border">
+              {detections.map((detection, index) => (
+                <li key={`${detection.classLabel}-${index}`} className="py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-medium text-foreground">{detection.classLabel}</span>
+                    <span className="text-xs tabular-nums text-muted-foreground">{(detection.confidence * 100).toFixed(1)}% confidence</span>
+                  </div>
+                  <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+                    Box: x {detection.boundingBox.x}, y {detection.boundingBox.y}, w {detection.boundingBox.width}, h {detection.boundingBox.height}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 border-y border-border py-3 text-sm text-muted-foreground">No detection details in the latest report.</p>
+          )}
+        </section>
+      </div>
+
+      <footer className="border-t border-border px-5 py-3 text-[11px] leading-5 text-muted-foreground">
+        Values reflect the latest available device report; offline state is provisional.
+      </footer>
+    </aside>
   );
 }
 
@@ -153,6 +214,9 @@ export default function HotspotMap() {
   const [mode, setMode] = useState<MapMode>("street");
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [hoveredDeviceId, setHoveredDeviceId] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawerRef = useRef<HTMLElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   const locatedDevices = useMemo(
     () => deviceList.filter((device) => device?.location?.lat != null && device?.location?.lng != null),
@@ -181,199 +245,211 @@ export default function HotspotMap() {
     }));
   }, [locatedDevices]);
 
-  // Default initial map center (Pune coordinates), unchanged from the Leaflet view.
+  const openDetails = useCallback((deviceId: string) => {
+    previousFocusRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+    setSelectedDeviceId(deviceId);
+    setDrawerOpen(true);
+  }, []);
+
+  const closeDetails = useCallback(() => {
+    setDrawerOpen(false);
+    setSelectedDeviceId(null);
+  }, []);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const panel = drawerRef.current;
+    const closeButton = panel?.querySelector<HTMLButtonElement>("[data-close-details]");
+    closeButton?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeDetails();
+        return;
+      }
+      if (event.key !== "Tab" || !panel) return;
+      const focusable = Array.from(panel.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ));
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      previousFocusRef.current?.focus();
+      previousFocusRef.current = null;
+    };
+  }, [drawerOpen, selectedDeviceId, closeDetails]);
+
   const defaultCenter: [number, number] = [18.5204, 73.8567];
+  const locationEmptyMessage = deviceList.length === 0
+    ? "Waiting for telemetry"
+    : "Location unavailable for reported devices";
 
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex items-center gap-1 rounded-xl border border-slate-800 bg-slate-950/70 p-1" role="group" aria-label="Map display mode">
+        <div className="inline-flex items-center gap-1 rounded-md border border-border bg-muted p-1" role="group" aria-label="Map display mode">
           <button
             type="button"
             onClick={() => setMode("street")}
             aria-pressed={mode === "street"}
-            className={`inline-flex min-h-9 items-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/70 ${
-              mode === "street" ? "bg-slate-800 text-white" : "text-slate-400 hover:text-slate-100"
-            }`}
+            className={`inline-flex min-h-9 items-center gap-2 rounded px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${mode === "street" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
           >
-            <MapIcon className="size-4" aria-hidden="true" />
-            Street
+            <MapIcon className="size-4" aria-hidden="true" /> Street
           </button>
           <button
             type="button"
             onClick={() => setMode("intensity")}
             aria-pressed={mode === "intensity"}
-            className={`inline-flex min-h-9 items-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/70 ${
-              mode === "intensity" ? "bg-slate-800 text-white" : "text-slate-400 hover:text-slate-100"
-            }`}
+            className={`inline-flex min-h-9 items-center gap-2 rounded px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${mode === "intensity" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
           >
-            <Flame className="size-4" aria-hidden="true" />
-            Intensity
+            <Flame className="size-4" aria-hidden="true" /> Intensity
           </button>
         </div>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted-foreground">
           {mode === "street"
-            ? "Interactive Leaflet map · live device locations"
+            ? "Interactive map · reported device locations"
             : "Relative device positions · intensity follows latest reported detections"}
         </p>
       </div>
 
-      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.6fr)_minmax(290px,0.8fr)]">
-        <div className="relative z-0 isolate h-[500px] min-w-0 w-full overflow-hidden rounded-xl border border-slate-800 bg-slate-950">
-          {mode === "street" ? (
-            <>
-            <MapContainer
-              center={defaultCenter}
-              zoom={12}
-              scrollWheelZoom={true}
-              style={{ height: "100%", width: "100%" }}
-            >
+      <div className="relative z-0 isolate h-[500px] min-w-0 w-full overflow-hidden rounded-lg border border-border bg-background">
+        {mode === "street" ? (
+          <>
+            <MapContainer center={defaultCenter} zoom={12} scrollWheelZoom style={{ height: "100%", width: "100%" }}>
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-
-              {locatedDevices.map((device) => (
-                <div key={`group-${device.deviceId}`}>
-                  <LeafletCircle
-                    key={`circle-${device.deviceId}`}
-                    center={[device.location.lat, device.location.lng]}
-                    radius={200}
-                    pathOptions={{
-                      fillOpacity: 0.35,
-                      weight: 2,
-                      fillColor: (device.detectionCount ?? 0) >= 2 ? "red" : "green",
-                      color: (device.detectionCount ?? 0) >= 2 ? "red" : "green",
-                    }}
-                  />
-                  <Marker
-                    key={`marker-${device.deviceId}`}
+              {locatedDevices.map((device) => {
+                const selected = device.deviceId === selectedDeviceId;
+                const circleColor = device.detectionCount >= 2 ? "var(--cc-critical)" : "var(--cc-positive)";
+                return (
+                  <Fragment key={device.deviceId}>
+                    <LeafletCircle
+                      center={[device.location.lat, device.location.lng]}
+                      radius={200}
+                      pathOptions={{ fillOpacity: 0.2, weight: 1.5, fillColor: circleColor, color: circleColor }}
+                    />
+                    <Marker
                     position={[device.location.lat, device.location.lng]}
-                    keyboard={true}
+                    icon={createDeviceIcon(device, selected)}
+                    keyboard
                     title={`${device.deviceId}, camera or sensor at ${formatLocation(device)}`}
                     alt={`${device.deviceId}, camera or sensor at ${formatLocation(device)}`}
                     eventHandlers={{ click: () => setSelectedDeviceId(device.deviceId) }}
                   >
-                    <LeafletTooltip className="rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100 shadow-xl">
-                      <span className="font-medium">{device.deviceId}</span>
-                      <br />
-                      <span>{formatLocation(device)}</span>
+                    <LeafletTooltip direction="top" interactive className="cc-map-tooltip">
+                      <DevicePreview device={device} onMoreDetails={openDetails} />
                     </LeafletTooltip>
                     <Popup>
-                      <strong>{device.deviceId}</strong>
-                      <br />
-                      Status: {device.status || "online"}
-                      <br />
-                      Location: {formatLocation(device)}
-                      <br />
-                      FPS: {device.fps ?? "N/A"}
-                      <br />
-                      Detections (latest report): {device.detectionCount ?? 0}
-                      <br />
-                      Confidence:{" "}
-                      {device.avgConfidence > 0
-                        ? `${(device.avgConfidence * 100).toFixed(1)}%`
-                        : "N/A"}
+                      <DevicePreview device={device} onMoreDetails={openDetails} />
                     </Popup>
-                  </Marker>
-                </div>
-              ))}
+                    </Marker>
+                  </Fragment>
+                );
+              })}
             </MapContainer>
             {locatedDevices.length === 0 && (
               <div className="pointer-events-none absolute inset-0 z-[400] grid place-items-center">
-                <span className="rounded-lg border border-slate-700 bg-slate-950/90 px-3 py-2 text-sm text-slate-300 shadow-lg" role="status">
-                  Waiting for telemetry
+                <span className="rounded-md border border-border bg-card px-3 py-2 text-sm text-muted-foreground shadow-lg" role="status">
+                  {locationEmptyMessage}
                 </span>
               </div>
             )}
-            </>
-          ) : (
-            <div
-              className="relative h-full w-full overflow-hidden"
-              role="group"
-              aria-label="Telemetry intensity view of device locations"
-              style={{
-                backgroundImage:
-                  "linear-gradient(rgba(148,163,184,0.055) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.055) 1px, transparent 1px), radial-gradient(ellipse at 50% 45%, rgba(15,23,42,0.25), rgba(2,6,23,0.96) 75%)",
-                backgroundSize: "44px 44px, 44px 44px, 100% 100%",
-              }}
-            >
-              {intensityPoints.length > 0 ? (
-                <>
-                  {intensityPoints.map(({ device, x, y, intensity }) => {
-                    const diameter = 76 + intensity * 150;
-                    const alpha = 0.12 + intensity * 0.28;
-                    const isSelected = device.deviceId === selectedDeviceId;
-                    const isHovered = device.deviceId === hoveredDeviceId;
-                    const tooltipId = `intensity-location-${encodeURIComponent(device.deviceId)}`;
-                    const tooltipPosition = x < 22
-                      ? "left-0"
-                      : x > 78
-                        ? "right-0"
-                        : "left-1/2 -translate-x-1/2";
-                    const tooltipVerticalPosition = y < 30 ? "top-full mt-2" : "bottom-full mb-2";
-                    return (
-                      <div key={device.deviceId}>
+          </>
+        ) : (
+          <div className="cc-intensity-map relative h-full w-full overflow-hidden" role="group" aria-label="Telemetry intensity view of device locations">
+            {intensityPoints.length > 0 ? (
+              <>
+                {intensityPoints.map(({ device, x, y, intensity }) => {
+                  const isSelected = device.deviceId === selectedDeviceId;
+                  const isHovered = device.deviceId === hoveredDeviceId;
+                  const tooltipHorizontal = x < 24 ? "left-0" : x > 76 ? "right-0" : "left-1/2 -translate-x-1/2";
+                  const tooltipVertical = y < 32 ? "top-full mt-2" : "bottom-full mb-2";
+                  const heatStrength = Math.round(12 + intensity * 30);
+                  const heatFade = Math.round(8 + intensity * 20);
+                  return (
+                    <div
+                      key={device.deviceId}
+                      className="absolute z-10"
+                      style={{ left: `${x}%`, top: `${y}%`, transform: "translate(-50%, -50%)" }}
+                      onMouseEnter={() => setHoveredDeviceId(device.deviceId)}
+                      onMouseLeave={() => setHoveredDeviceId(null)}
+                      onFocusCapture={() => setHoveredDeviceId(device.deviceId)}
+                      onBlurCapture={(event) => {
+                        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setHoveredDeviceId(null);
+                      }}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="pointer-events-none absolute left-1/2 top-1/2 block rounded-full"
+                        style={{
+                          width: `${72 + intensity * 132}px`,
+                          height: `${72 + intensity * 132}px`,
+                          transform: "translate(-50%, -50%)",
+                          background: `radial-gradient(circle, color-mix(in oklch, var(--cc-warning) ${heatStrength}%, transparent) 0%, color-mix(in oklch, var(--cc-critical) ${heatFade}%, transparent) 42%, transparent 74%)`,
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedDeviceId(device.deviceId);
+                          setHoveredDeviceId(device.deviceId);
+                        }}
+                        aria-label={`Show summary for ${device.deviceId}, camera or sensor at ${formatLocation(device)}`}
+                        aria-expanded={isHovered}
+                        className={`relative z-10 grid size-8 place-items-center rounded-full border-2 bg-primary text-[10px] font-semibold text-primary-foreground shadow-md transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${isSelected ? "outline outline-2 outline-primary outline-offset-2" : "border-card"}`}
+                      >
+                        <MapPin className="size-4" aria-hidden="true" />
+                      </button>
+                      {isHovered && (
                         <div
-                          className="pointer-events-none absolute rounded-full"
-                          aria-hidden="true"
-                          style={{
-                            left: `${x}%`,
-                            top: `${y}%`,
-                            width: `${diameter}px`,
-                            height: `${diameter}px`,
-                            transform: "translate(-50%, -50%)",
-                            background: `radial-gradient(circle, rgba(251,146,60,${alpha}) 0%, rgba(239,68,68,${alpha * 0.55}) 38%, rgba(239,68,68,0) 72%)`,
-                            filter: "blur(1px)",
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setSelectedDeviceId(device.deviceId)}
-                          onMouseEnter={() => setHoveredDeviceId(device.deviceId)}
-                          onMouseLeave={() => setHoveredDeviceId(null)}
-                          onFocus={() => setHoveredDeviceId(device.deviceId)}
-                          onBlur={() => setHoveredDeviceId(null)}
-                          aria-label={`Select ${device.deviceId}; camera or sensor location ${formatLocation(device)}`}
-                          aria-describedby={isHovered ? tooltipId : undefined}
-                          className={`absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded-lg px-1.5 py-1 text-left transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 ${isSelected ? "ring-2 ring-cyan-300" : ""}`}
-                          style={{ left: `${x}%`, top: `${y}%` }}
+                          role="group"
+                          aria-label={`Preview for ${device.deviceId}`}
+                          className={`absolute ${tooltipHorizontal} ${tooltipVertical} z-30 w-56 rounded-lg border border-border bg-card text-foreground shadow-xl`}
                         >
-                          <span className="mx-auto block size-3 rounded-full border border-white/80 bg-orange-300 shadow-[0_0_12px_rgba(251,146,60,0.9)]" />
-                          <span className="mt-1 block max-w-32 truncate whitespace-nowrap rounded-md border border-slate-700/80 bg-slate-950/90 px-2 py-1 text-[10px] text-slate-200 shadow-lg">
-                            {device.deviceId} · {device.detectionCount}
-                          </span>
-                          {isHovered && (
-                            <span
-                              id={tooltipId}
-                              role="tooltip"
-                              className={`absolute ${tooltipPosition} ${tooltipVerticalPosition} z-30 w-52 rounded-lg border border-slate-700 bg-slate-950/95 p-3 text-left text-xs text-slate-200 shadow-xl`}
-                            >
-                              <span className="block font-semibold text-white">{device.deviceId}</span>
-                              <span className="mt-1 block text-slate-400">Camera / sensor location</span>
-                              <span className="mt-1 block font-mono tabular-nums text-cyan-200">{formatLocation(device)}</span>
-                            </span>
-                          )}
-                        </button>
-                      </div>
-                    );
-                  })}
-                  <div className="absolute bottom-4 left-4 flex items-center gap-3 rounded-lg border border-slate-700/80 bg-slate-950/85 px-3 py-2 text-[11px] text-slate-400">
-                    <span>Lower intensity</span>
-                    <span className="h-2 w-20 rounded-full bg-gradient-to-r from-orange-300/20 via-orange-400/60 to-rose-400" aria-hidden="true" />
-                    <span>Higher</span>
-                  </div>
-                </>
-              ) : (
-                <div className="grid h-full place-items-center px-4 text-center text-sm text-slate-400">
-                  Waiting for telemetry
+                          <DevicePreview device={device} onMoreDetails={openDetails} />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                <div className="absolute bottom-3 left-3 flex items-center gap-2 rounded-md border border-border bg-card/95 px-3 py-2 text-[11px] text-muted-foreground shadow-sm">
+                  <span>Lower intensity</span>
+                  <span className="h-2 w-16 rounded-full" style={{ background: "linear-gradient(90deg, var(--cc-positive), var(--cc-warning), var(--cc-critical))" }} aria-hidden="true" />
+                  <span>Higher</span>
                 </div>
-              )}
-            </div>
-          )}
-        </div>
+              </>
+            ) : (
+              <div className="grid h-full place-items-center px-4 text-center text-sm text-muted-foreground" role="status">
+                {locationEmptyMessage}
+              </div>
+            )}
+          </div>
+        )}
 
-        <DeviceDetailCard
-          device={selectedDevice}
-          onClear={() => setSelectedDeviceId(null)}
-        />
+        {drawerOpen && selectedDevice && (
+          <>
+            <button
+              type="button"
+              aria-label="Close device details"
+              onClick={closeDetails}
+              className="absolute inset-0 z-[690] bg-black/25"
+            />
+            <DeviceDetailsDrawer device={selectedDevice} drawerRef={drawerRef} onClose={closeDetails} />
+          </>
+        )}
       </div>
     </div>
   );

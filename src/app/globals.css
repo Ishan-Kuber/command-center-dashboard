@@ -39,53 +39,120 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
+  --radius-sm: calc(var(--radius) * 0.65);
+  --radius-md: calc(var(--radius) * 0.82);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-xl: calc(var(--radius) * 1.25);
+  --radius-2xl: calc(var(--radius) * 1.6);
+  --radius-3xl: calc(var(--radius) * 2);
+  --radius-4xl: calc(var(--radius) * 2.4);
 }
 
 :root {
-  color-scheme: dark;
-  --background: oklch(0.145 0.018 252);
-  --foreground: oklch(0.96 0.008 245);
-  --card: oklch(0.19 0.022 252);
-  --card-foreground: oklch(0.96 0.008 245);
-  --popover: oklch(0.19 0.022 252);
-  --popover-foreground: oklch(0.96 0.008 245);
-  --primary: oklch(0.76 0.13 195);
-  --primary-foreground: oklch(0.16 0.025 252);
-  --secondary: oklch(0.24 0.022 252);
-  --secondary-foreground: oklch(0.92 0.01 245);
-  --muted: oklch(0.23 0.02 252);
-  --muted-foreground: oklch(0.72 0.018 245);
-  --accent: oklch(0.26 0.03 225);
-  --accent-foreground: oklch(0.95 0.01 220);
-  --destructive: oklch(0.67 0.19 25);
-  --border: oklch(0.31 0.025 252);
-  --input: oklch(0.31 0.025 252);
-  --ring: oklch(0.72 0.13 195);
-  --chart-1: oklch(0.76 0.13 195);
-  --chart-2: oklch(0.73 0.13 150);
-  --chart-3: oklch(0.77 0.14 85);
-  --chart-4: oklch(0.72 0.16 35);
-  --chart-5: oklch(0.69 0.15 285);
-  --radius: 0.9rem;
-  --sidebar: oklch(0.17 0.02 252);
-  --sidebar-foreground: oklch(0.94 0.01 245);
-  --sidebar-primary: oklch(0.76 0.13 195);
-  --sidebar-primary-foreground: oklch(0.16 0.025 252);
-  --sidebar-accent: oklch(0.24 0.025 252);
-  --sidebar-accent-foreground: oklch(0.95 0.01 245);
-  --sidebar-border: oklch(0.3 0.025 252);
-  --sidebar-ring: oklch(0.72 0.13 195);
+  color-scheme: light;
+  --background: oklch(0.982 0.004 240);
+  --foreground: oklch(0.25 0.025 255);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.25 0.025 255);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.25 0.025 255);
+  --primary: oklch(0.52 0.09 190);
+  --primary-foreground: oklch(0.99 0.005 200);
+  --secondary: oklch(0.95 0.012 220);
+  --secondary-foreground: oklch(0.31 0.025 250);
+  --muted: oklch(0.955 0.008 235);
+  --muted-foreground: oklch(0.49 0.025 250);
+  --accent: oklch(0.94 0.025 195);
+  --accent-foreground: oklch(0.32 0.065 195);
+  --destructive: oklch(0.56 0.17 25);
+  --border: oklch(0.89 0.012 240);
+  --input: oklch(0.89 0.012 240);
+  --ring: oklch(0.58 0.1 190);
+  --chart-1: oklch(0.56 0.12 190);
+  --chart-2: oklch(0.59 0.12 150);
+  --chart-3: oklch(0.68 0.13 75);
+  --chart-4: oklch(0.61 0.16 35);
+  --chart-5: oklch(0.56 0.13 250);
+  --radius: 0.7rem;
+  --sidebar: oklch(0.99 0.003 240);
+  --sidebar-foreground: oklch(0.25 0.025 255);
+  --sidebar-primary: oklch(0.52 0.09 190);
+  --sidebar-primary-foreground: oklch(0.99 0.005 200);
+  --sidebar-accent: oklch(0.94 0.025 195);
+  --sidebar-accent-foreground: oklch(0.32 0.065 195);
+  --sidebar-border: oklch(0.89 0.012 240);
+  --sidebar-ring: oklch(0.58 0.1 190);
+  --cc-positive: oklch(0.43 0.11 155);
+  --cc-positive-soft: oklch(0.94 0.035 155);
+  --cc-positive-border: oklch(0.84 0.07 155);
+  --cc-warning: oklch(0.48 0.11 75);
+  --cc-warning-soft: oklch(0.96 0.04 85);
+  --cc-warning-border: oklch(0.87 0.08 80);
+  --cc-critical: oklch(0.52 0.16 25);
+  --cc-critical-soft: oklch(0.95 0.03 25);
+  --cc-critical-border: oklch(0.86 0.07 25);
+  --cc-info: oklch(0.49 0.12 240);
+  --cc-info-soft: oklch(0.94 0.025 240);
+  --cc-info-border: oklch(0.84 0.06 240);
+  --cc-neutral: oklch(0.48 0.02 250);
+  --cc-neutral-soft: oklch(0.94 0.008 240);
+  --cc-neutral-border: oklch(0.86 0.012 240);
+  --map-marker-online: oklch(0.5 0.12 175);
+  --map-marker-warning: oklch(0.64 0.14 70);
+  --map-marker-offline: oklch(0.55 0.02 250);
 }
 
 .dark {
   color-scheme: dark;
+  --background: oklch(0.19 0.014 250);
+  --foreground: oklch(0.94 0.008 245);
+  --card: oklch(0.235 0.016 250);
+  --card-foreground: oklch(0.94 0.008 245);
+  --popover: oklch(0.235 0.016 250);
+  --popover-foreground: oklch(0.94 0.008 245);
+  --primary: oklch(0.72 0.1 190);
+  --primary-foreground: oklch(0.19 0.02 250);
+  --secondary: oklch(0.28 0.018 250);
+  --secondary-foreground: oklch(0.9 0.01 245);
+  --muted: oklch(0.275 0.016 250);
+  --muted-foreground: oklch(0.72 0.018 245);
+  --accent: oklch(0.3 0.035 205);
+  --accent-foreground: oklch(0.92 0.02 205);
+  --destructive: oklch(0.67 0.16 25);
+  --border: oklch(0.36 0.018 250);
+  --input: oklch(0.36 0.018 250);
+  --ring: oklch(0.72 0.1 190);
+  --chart-1: oklch(0.72 0.1 190);
+  --chart-2: oklch(0.74 0.11 150);
+  --chart-3: oklch(0.78 0.12 85);
+  --chart-4: oklch(0.72 0.15 35);
+  --chart-5: oklch(0.7 0.13 250);
+  --sidebar: oklch(0.215 0.015 250);
+  --sidebar-foreground: oklch(0.94 0.008 245);
+  --sidebar-primary: oklch(0.72 0.1 190);
+  --sidebar-primary-foreground: oklch(0.19 0.02 250);
+  --sidebar-accent: oklch(0.3 0.035 205);
+  --sidebar-accent-foreground: oklch(0.92 0.02 205);
+  --sidebar-border: oklch(0.36 0.018 250);
+  --sidebar-ring: oklch(0.72 0.1 190);
+  --cc-positive: oklch(0.78 0.12 155);
+  --cc-positive-soft: oklch(0.32 0.045 155);
+  --cc-positive-border: oklch(0.45 0.07 155);
+  --cc-warning: oklch(0.82 0.12 80);
+  --cc-warning-soft: oklch(0.32 0.05 80);
+  --cc-warning-border: oklch(0.47 0.08 80);
+  --cc-critical: oklch(0.78 0.13 25);
+  --cc-critical-soft: oklch(0.33 0.055 25);
+  --cc-critical-border: oklch(0.48 0.08 25);
+  --cc-info: oklch(0.78 0.09 235);
+  --cc-info-soft: oklch(0.31 0.045 235);
+  --cc-info-border: oklch(0.46 0.06 235);
+  --cc-neutral: oklch(0.76 0.018 245);
+  --cc-neutral-soft: oklch(0.31 0.014 250);
+  --cc-neutral-border: oklch(0.44 0.018 250);
+  --map-marker-online: oklch(0.76 0.12 175);
+  --map-marker-warning: oklch(0.8 0.13 75);
+  --map-marker-offline: oklch(0.73 0.02 250);
 }
 
 @layer base {
@@ -109,11 +176,154 @@
 
   ::selection {
     color: var(--primary-foreground);
-    background: color-mix(in oklch, var(--primary) 68%, transparent);
+    background: color-mix(in oklch, var(--primary) 28%, transparent);
   }
 
   button,
   a {
     -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer utilities {
+  .cc-positive { color: var(--cc-positive); }
+  .cc-positive-soft { background-color: var(--cc-positive-soft); }
+  .cc-positive-fill { background-color: var(--cc-positive); }
+  .cc-positive-border { border-color: var(--cc-positive-border); }
+  .cc-warning { color: var(--cc-warning); }
+  .cc-warning-soft { background-color: var(--cc-warning-soft); }
+  .cc-warning-fill { background-color: var(--cc-warning); }
+  .cc-warning-border { border-color: var(--cc-warning-border); }
+  .cc-critical { color: var(--cc-critical); }
+  .cc-critical-soft { background-color: var(--cc-critical-soft); }
+  .cc-critical-fill { background-color: var(--cc-critical); }
+  .cc-critical-border { border-color: var(--cc-critical-border); }
+  .cc-info { color: var(--cc-info); }
+  .cc-info-soft { background-color: var(--cc-info-soft); }
+  .cc-info-fill { background-color: var(--cc-info); }
+  .cc-info-border { border-color: var(--cc-info-border); }
+  .cc-neutral { color: var(--cc-neutral); }
+  .cc-neutral-soft { background-color: var(--cc-neutral-soft); }
+  .cc-neutral-border { border-color: var(--cc-neutral-border); }
+}
+
+.leaflet-container {
+  background: var(--background);
+  color: var(--foreground);
+  font: inherit;
+}
+
+.dark .leaflet-tile {
+  filter: invert(0.88) hue-rotate(180deg) saturate(0.58) brightness(0.86);
+}
+
+.cc-intensity-map {
+  background-color: var(--background);
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--border) 45%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--border) 45%, transparent) 1px, transparent 1px),
+    radial-gradient(ellipse at 50% 45%, color-mix(in srgb, var(--primary) 5%, transparent), transparent 75%);
+  background-size: 44px 44px, 44px 44px, 100% 100%;
+}
+
+.cc-device-drawer {
+  position: absolute;
+  inset: 0;
+  z-index: 700;
+  width: 100%;
+  max-height: 100%;
+}
+
+@media (min-width: 640px) {
+  .cc-device-drawer {
+    position: absolute;
+    inset: 0 0 0 auto;
+    z-index: 700;
+    width: min(430px, calc(100% - 1rem));
+    max-height: none;
+    border-left: 1px solid var(--border);
+  }
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--card);
+  color: var(--foreground);
+}
+
+.leaflet-popup-content-wrapper {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 24px rgb(15 23 42 / 16%);
+}
+
+.leaflet-popup-content {
+  margin: 0.75rem;
+}
+
+.leaflet-popup-close-button {
+  color: var(--muted-foreground) !important;
+}
+
+.leaflet-control-zoom a,
+.leaflet-control-attribution {
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+
+.leaflet-control-attribution a {
+  color: var(--primary) !important;
+}
+
+.leaflet-tooltip.cc-map-tooltip {
+  padding: 0;
+  color: var(--foreground);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 24px rgb(15 23 42 / 16%);
+}
+
+.leaflet-tooltip.cc-map-tooltip::before {
+  border-top-color: var(--border);
+  border-bottom-color: var(--border);
+}
+
+.cc-map-marker-wrap {
+  border: 0;
+  background: transparent;
+}
+
+.cc-map-marker {
+  display: grid;
+  width: 29px;
+  height: 29px;
+  place-items: center;
+  border: 2px solid white;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: var(--map-marker-online);
+  box-shadow: 0 2px 7px rgb(15 23 42 / 35%);
+}
+
+.cc-map-marker::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 88%);
+}
+
+.cc-map-marker--warning { background: var(--map-marker-warning); }
+.cc-map-marker--offline { background: var(--map-marker-offline); }
+.cc-map-marker--selected { outline: 3px solid var(--primary); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

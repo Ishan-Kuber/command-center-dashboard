@@ -222,21 +222,21 @@ export default function ConnectionMonitor() {
     <aside
       className={`fixed bottom-4 right-4 z-[1300] w-[min(25rem,calc(100vw-2rem))] rounded-2xl border p-4 shadow-2xl backdrop-blur-xl ${
         isFailure
-          ? "border-rose-400/30 bg-slate-950/95"
-          : "border-amber-300/25 bg-slate-950/95"
+          ? "cc-critical-border bg-muted"
+          : "cc-warning-border bg-muted"
       }`}
       role={isFailure ? "alert" : "status"}
       aria-live={isFailure ? "assertive" : "polite"}
     >
       <div className="flex items-start gap-3">
-        <span className={`grid size-9 shrink-0 place-items-center rounded-xl ${isFailure ? "bg-rose-400/10 text-rose-300" : "bg-amber-300/10 text-amber-200"}`}>
+        <span className={`grid size-9 shrink-0 place-items-center rounded-xl ${isFailure ? "cc-critical-soft cc-critical" : "cc-warning-soft cc-warning"}`}>
           {isFailure ? <AlertTriangle className="size-4" aria-hidden="true" /> : <RotateCw className="size-4 animate-spin" aria-hidden="true" />}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-slate-100">
+          <p className="text-sm font-semibold text-foreground">
             {isFailure ? `Still unable to connect to ${noticeLabel}` : `Trying to reconnect to ${noticeLabel}…`}
           </p>
-          <p className="mt-1 text-xs leading-5 text-slate-400">
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
             {isFailure
               ? "Automatic retries are continuing. You can retry the unavailable connection now."
               : "The connection is not available yet; automatic retries are in progress."}
@@ -247,7 +247,7 @@ export default function ConnectionMonitor() {
         <button
           type="button"
           onClick={retryConnections}
-          className="mt-3 inline-flex min-h-9 items-center gap-2 rounded-lg border border-rose-300/20 bg-rose-300/10 px-3 text-sm font-medium text-rose-100 transition-colors hover:bg-rose-300/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/70"
+          className="mt-3 inline-flex min-h-9 items-center gap-2 rounded-lg border cc-critical-border cc-critical-soft px-3 text-sm font-medium cc-critical transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Radio className="size-4" aria-hidden="true" />
           Retry connection
